@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Newtonsoft.Json;
-using System.Net.Http.Json;
 using TaskFrontend.Services;
 
 namespace TaskFrontend.Pages
@@ -17,27 +16,23 @@ namespace TaskFrontend.Pages
             _httpClient = httpClient;
         }
 
-        public List<TareaDTO> Tareas { get; set; } = new List<TareaDTO>();
-
-        [BindProperty]
-        public TareaDTO NuevaTarea { get; set; } = new TareaDTO();
-
-        [BindProperty]
-        public TareaDTO TareaEditada { get; set; } = new TareaDTO();
+        public List<Tarea> Tareas { get; set; } = new List<Tarea>();
 
         public async Task OnGetAsync()
         {
             try
             {
+                // Establece el encabezado de autorización usando el JWT Token
                 _authService.SetAuthorizationHeader(_httpClient);
 
+                // Realiza la solicitud GET a la API
                 var response = await _httpClient.GetAsync("http://localhost:5122/api/Task/List");
 
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
-                    var apiResponse = JsonConvert.DeserializeObject<ApiResponseDTO>(json);
-                    Tareas = apiResponse?.Value ?? new List<TareaDTO>();
+                    var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(json);
+                    Tareas = apiResponse?.Value ?? new List<Tarea>();
                 }
                 else
                 {
@@ -49,118 +44,28 @@ namespace TaskFrontend.Pages
                 ModelState.AddModelError(string.Empty, $"Ocurrió un error: {ex.Message}");
             }
         }
-
-        public async Task<IActionResult> OnPostCreateAsync()
-        {
-            try
-            {
-                _authService.SetAuthorizationHeader(_httpClient);
-
-                // Agregar un usuario asignado a la tarea nueva si es necesario
-                if (NuevaTarea.UserAssigned == null)
-                {
-                    NuevaTarea.UserAssigned = new UserAssignedDTO { Id = 0 }; // O el ID del usuario asignado
-                }
-
-                var response = await _httpClient.PostAsJsonAsync("http://localhost:5122/api/Task/Create", NuevaTarea);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    return RedirectToPage();
-                }
-                else
-                {
-                    ModelState.AddModelError(string.Empty, "Error al crear la tarea.");
-                }
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty, $"Ocurrió un error: {ex.Message}");
-            }
-
-            return Page();
-        }
-
-        public async Task<IActionResult> OnPostUpdateAsync(int id)
-        {
-            try
-            {
-                _authService.SetAuthorizationHeader(_httpClient);
-
-                // Asegurar que la tarea editada tenga un usuario asignado
-                if (TareaEditada.UserAssigned == null)
-                {
-                    TareaEditada.UserAssigned = new UserAssignedDTO { Id = 0 }; // O el ID del usuario asignado
-                }
-
-                var response = await _httpClient.PutAsJsonAsync($"http://localhost:5122/api/Task/Update/{id}", TareaEditada);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    return RedirectToPage();
-                }
-                else
-                {
-                    ModelState.AddModelError(string.Empty, "Error al actualizar la tarea.");
-                }
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty, $"Ocurrió un error: {ex.Message}");
-            }
-
-            return Page();
-        }
-
-        public async Task<IActionResult> OnPostDeleteAsync(int id)
-        {
-            try
-            {
-                _authService.SetAuthorizationHeader(_httpClient);
-
-                var response = await _httpClient.DeleteAsync($"http://localhost:5122/api/Task/Delete/{id}");
-
-                if (response.IsSuccessStatusCode)
-                {
-                    return RedirectToPage();
-                }
-                else
-                {
-                    ModelState.AddModelError(string.Empty, "Error al eliminar la tarea.");
-                }
-            }
-            catch (Exception ex)
-            {
-                ModelState.AddModelError(string.Empty, $"Ocurrió un error: {ex.Message}");
-            }
-
-            return Page();
-        }
     }
-    // DTOs to match the API structure
-    public class TareaDTO
+
+    public class Tarea
     {
         public int Id { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
         public int Status { get; set; }
-        public UserAssignedDTO UserAssigned { get; set; }
-
-        // Agregamos las propiedades CreatedAt y UpdatedAt
+        public UserAssigned UserAssigned { get; set; }  // Change here
         public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; } // Asegúrate de que esta propiedad coincida con la estructura
+        public DateTime UpdatedAt { get; set; }
     }
 
-    public class UserAssignedDTO
+    public class UserAssigned  // Add this class to represent the userAssigned object
     {
         public int Id { get; set; }
-       
+        public string Name { get; set; }
+        public int Role { get; set; }  // Or specify the correct type if available
     }
 
-
-    // API Response DTO
-    public class ApiResponseDTO
+    public class ApiResponse
     {
-        public List<TareaDTO> Value { get; set; }
+        public List<Tarea> Value { get; set; }
     }
 }
