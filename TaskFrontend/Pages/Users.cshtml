@@ -1,0 +1,20 @@
+﻿@page
+@model TaskFrontend.Pages.UsersModel
+@{
+}
+@if (Model.Users.Any())
+{
+    <ul>
+        @foreach (var user in Model.Users)
+        {
+            <li>
+                <strong>@user.Id</strong>: @user.Name <br />
+                Estado: @(user.Role == 0 ? "Admin" : "User") <br />
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <p>No hay usuarios disponibles.</p>  <!-- Adjusted message for users -->
+}
